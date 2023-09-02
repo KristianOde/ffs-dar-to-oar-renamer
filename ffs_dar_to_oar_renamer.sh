@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 get_weapon () {
     local index=$1
     if [ ${1:0:1} -eq 0 ]
@@ -90,19 +92,41 @@ rename_folder () {
 dir=$(basename "$(pwd)")
 thisdate=$(date +%F_%R)
 newdir="$dir ($thisdate)"
+workingdir="$(pwd) ($thisdate)"
+
+hasvalidfolder=false
+hasvalidconfig=false
+for d in * ; do
+    if [ $d = "config.json" ]
+    then
+        hasvalidconfig=true
+    elif [ ${d:0:1} = "9" ] && [ ${#d} -eq 7 ]
+    then
+        hasvalidfolder=true
+    fi
+done 
+
+if ! $hasvalidfolder || ! $hasvalidconfig
+then 
+    echo "Folder does not seem to be a valid OAR-converted FFS folder, exiting"
+    exit 1
+fi
+    echo "$hasvalidconfig $hasvalidfolder success!"
 
 cp -r -v "$(pwd)/" "../$newdir"
 
-workingdir="$(pwd) ($thisdate)"
+
+echo $workingdir
 
 for d in "$workingdir"/*/ ; do
     folder="$(basename "$d")"
     mkdir -p "$workingdir/Backup"
 
-    if [ ${#folder} -eq 7 ] && [ ${folder:0:1} == "9" ]
+    if [ ${#folder} -eq 7 ]
     then
         newfolder=$(rename_folder)
         newfolderdir="$workingdir/$newfolder"
+        # echo "$newfolder ||| $newfolderdir"
         mv -v "$d" "$newfolderdir"
         json="$newfolderdir/config.json"
         name=${newfolder%/}
